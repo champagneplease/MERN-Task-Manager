@@ -30,7 +30,7 @@ Siga los siguientes pasos para ejecutar el entorno de desarrollo localmente.
 ### 1. Clonar el repositorio
 
 ```bash
-git clone [https://github.com/tu-usuario/todoapp.git](https://github.com/tu-usuario/todoapp.git)
+git clone https://github.com/champagneplease/MERN-Task-Manager
 cd todoapp
 
 ```
