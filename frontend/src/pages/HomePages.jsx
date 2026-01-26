@@ -17,7 +17,6 @@ export const HomePages = () => {
       } finally {
         setLoading(false);
       }
-      Ï;
     };
 
     fetchData();

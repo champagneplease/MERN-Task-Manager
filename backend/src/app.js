@@ -13,7 +13,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "https://mern-task-manager-git-main-champagnepleases-projects.vercel.app",
-      "https://mern-task-manager-swart.vercel.app/",
+      "https://mern-task-manager-swart.vercel.app",
     ],
   }),
 );
