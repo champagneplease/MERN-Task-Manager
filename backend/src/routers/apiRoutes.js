@@ -29,14 +29,15 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { userName, title, description, isImportant } = req.body;
+    // const { userName, title, description, isImportant } = req.body;
 
-    const note = new Note({
-      userName,
-      title,
-      description,
-      isImportant,
-    });
+    const note = new Note(
+      req.body,
+      // userName,
+      // title,
+      // description,
+      // isImportant,
+    );
 
     const savedNote = await note.save();
 
@@ -46,9 +47,16 @@ router.post("/", async (req, res) => {
         note: savedNote,
       });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        ok: false,
+        message: "Error de validación",
+        errors: error.errors,
+      });
+    }
+
+    return res.status(500).json({ ok: false, msg: "Error del servidor" });
   }
 });
 
