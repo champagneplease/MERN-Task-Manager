@@ -11,31 +11,26 @@ export const CreateNotes = () => {
   const handleCreate = async (note) => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
 
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}`, note);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}`, note, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.status !== 201) {
         throw new Error("Error al crear POST");
       }
 
-      toast.success("POST creado con éxito", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
-
+      toast.success("POST creado con éxito");
       navigate("/");
     } catch (err) {
       console.error(err);
-      toast.error("Error al crear POST", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
+      toast.error("Error al crear POST");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen grid place-items-center">
       <NoteForm onSubmit={handleCreate} loading={loading} />

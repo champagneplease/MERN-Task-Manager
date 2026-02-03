@@ -1,112 +1,138 @@
 import express from "express";
 import Note from "../models/apiModels.js";
+import User from "../models/userModels.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
-    const notes = await Note.find();
+    const { username, email, password } = req.body;
+    const emailExist = await User.findOne({ email });
+    if (emailExist)
+      return res.status(400).json({ message: "El email ya existe" });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    const savedUser = await user.save();
+
+    const token = jwt.sign(
+      { id: savedUser._id, username: savedUser.username },
+      process.env.JWT_SECRET || "secreto_super_seguro",
+    );
+
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: "Error al registrar usuario" });
+  }
+});
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Usuario no encontrado" });
+
+    const validPass = await bcrypt.compare(password, user.password);
+    if (!validPass)
+      return res.status(400).json({ message: "Contraseña incorrecta" });
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET || "secreto_super_seguro",
+    );
+
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: "Error al iniciar sesión" });
+  }
+});
+
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    const notes = await Note.find({ user: req.user.id });
     res.status(200).json(notes);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const note = await Note.findById(id);
-    if (!note) {
-      return res.status(404).json({ error: "Note not found" });
-    }
+    const note = await Note.findOne({ _id: id, user: req.user.id });
+
+    if (!note) return res.status(404).json({ error: "Nota no encontrada" });
+
     res.status(200).json(note);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   try {
-    // const { userName, title, description, isImportant } = req.body;
-
-    const note = new Note(
-      req.body,
-      // userName,
-      // title,
-      // description,
-      // isImportant,
-    );
-
-    const savedNote = await note.save();
-
-    if (savedNote) {
-      res.status(201).json({
-        message: "Note created successfully",
-        note: savedNote,
-      });
-    }
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({
-        ok: false,
-        message: "Error de validación",
-        errors: error.errors,
-      });
-    }
-
-    return res.status(500).json({ ok: false, msg: "Error del servidor" });
-  }
-});
-
-router.put("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { userName, title, description, isImportant } = req.body;
-
-    const note = await Note.findByIdAndUpdate(
-      id,
-      {
-        userName,
-        title,
-        description,
-        isImportant,
-      },
-      {
-        new: true,
-        runValidators: true,
-      },
-    );
-
-    if (!note) {
-      return res.status(404).json({ error: "Note not found" });
-    }
-
-    res.status(200).json({
-      message: "Note updated successfully",
-      note,
+    const newNote = new Note({
+      ...req.body,
+      userName: req.user.username,
+      user: req.user.id,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    const savedNote = await newNote.save();
+    res.status(201).json(savedNote);
+  } catch (error) {
+    res.status(500).json({ error: "Error al guardar la nota" });
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-
-    const deletedNote = await Note.findByIdAndDelete(id);
+    const deletedNote = await Note.findOneAndDelete({
+      _id: id,
+      user: req.user.id,
+    });
 
     if (!deletedNote) {
-      return res.status(404).json({ error: "Note not found" });
+      return res
+        .status(404)
+        .json({ error: "No encontrada o no tienes permiso" });
     }
 
-    res.status(200).json({ message: "Note deleted successfully" });
+    res.status(200).json({ message: "Nota eliminada" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Error del servidor" });
+  }
+});
+
+router.put("/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedNote = await Note.findOneAndUpdate(
+      { _id: id, user: req.user.id },
+      req.body,
+      { new: true },
+    );
+
+    if (!updatedNote) {
+      return res
+        .status(404)
+        .json({ error: "No encontrada o no tienes permiso" });
+    }
+
+    res.status(200).json(updatedNote);
+  } catch (err) {
+    res.status(500).json({ error: "Error del servidor" });
   }
 });
 

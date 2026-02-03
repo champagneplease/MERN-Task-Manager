@@ -13,7 +13,10 @@ export const EditNotes = () => {
   useEffect(() => {
     const fetchNote = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/${id}`);
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setInitialData(res.data);
       } catch (error) {
         console.error("Error cargando POST:", error);
@@ -27,37 +30,31 @@ export const EditNotes = () => {
   const handleEdit = async (note) => {
     try {
       setLoading(true);
+      const token = localStorage.getItem("token");
 
       const noteToUpdate = {
         title: note.title,
         description: note.description,
-        userName: note.userName,
         isImportant: note.isImportant,
       };
 
       const res = await axios.put(
         `${import.meta.env.VITE_API_URL}/${id}`,
         noteToUpdate,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
 
       if (res.status !== 200) {
         throw new Error("Error al editar POST");
       }
 
-      toast.success("POST actualizado", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
-
+      toast.success("POST actualizado");
       navigate("/");
     } catch (err) {
       console.error(err);
-      toast.error("Error al editar", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
+      toast.error("Error al editar");
     } finally {
       setLoading(false);
     }

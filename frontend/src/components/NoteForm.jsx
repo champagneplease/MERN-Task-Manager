@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 export const NoteForm = ({ onSubmit, initialData = null, loading }) => {
   const [note, setNote] = useState({
-    userName: "",
     title: "",
     description: "",
     isImportant: false,
@@ -10,13 +9,16 @@ export const NoteForm = ({ onSubmit, initialData = null, loading }) => {
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
-      setNote(initialData);
+      setNote({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        isImportant: initialData.isImportant || false,
+      });
     }
   }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     setNote({
       ...note,
       [name]: type === "checkbox" ? checked : value,
@@ -35,23 +37,14 @@ export const NoteForm = ({ onSubmit, initialData = null, loading }) => {
           {initialData ? "Editar POST" : "Nuevo POST"}
         </h2>
 
-        <input
-          type="text"
-          name="userName"
-          placeholder="Nombre De Usuario"
-          className="input input-bordered w-full bg-base-100"
-          value={note.userName || ""}
-          onChange={handleChange}
-          required
-        />
+        {/* Input de usuario ELIMINADO intencionalmente */}
 
         <input
           type="text"
           name="title"
-          placeholder="Título
-"
+          placeholder="Título"
           className="input input-bordered w-full bg-base-100"
-          value={note.title || ""}
+          value={note.title}
           onChange={handleChange}
           required
         />
@@ -61,7 +54,7 @@ export const NoteForm = ({ onSubmit, initialData = null, loading }) => {
           placeholder="Descripción"
           className="textarea textarea-bordered w-full bg-base-100"
           rows={3}
-          value={note.description || ""}
+          value={note.description}
           onChange={handleChange}
           required
         />
@@ -71,7 +64,7 @@ export const NoteForm = ({ onSubmit, initialData = null, loading }) => {
             type="checkbox"
             name="isImportant"
             className="checkbox checkbox-accent"
-            checked={!!note.isImportant} // Asegura que sea booleano
+            checked={note.isImportant}
             onChange={handleChange}
           />
           Importante

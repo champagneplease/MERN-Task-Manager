@@ -14,22 +14,17 @@ export const CardNotes = ({ note }) => {
 
   const handleDelete = async () => {
     try {
-      const res = await axios.delete(`${import.meta.env.VITE_API_URL}/${_id}`);
+      const token = localStorage.getItem("token");
+      const res = await axios.delete(`${import.meta.env.VITE_API_URL}/${_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (res.status !== 200) throw new Error("Error al eliminar POST");
 
-      toast.success("POST eliminado", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
+      toast.success("POST eliminado");
       window.location.reload();
     } catch (err) {
-      toast.error("Error al eliminar", {
-        position: "bottom-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
+      toast.error("No tienes permiso o hubo un error");
     }
   };
 
@@ -41,7 +36,7 @@ export const CardNotes = ({ note }) => {
     <div className="card bg-base-300 w-full shadow-xl">
       <div className="card-body">
         <div className="flex justify-between items-start">
-          <p className="text-sm opacity-70 mb-1">@{userName}</p>
+          <p className="text-sm opacity-70 mb-1">@{userName || "yo"}</p>
           {isImportant && (
             <span className="badge badge-accent badge-outline text-xs">
               Importante
